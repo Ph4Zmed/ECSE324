@@ -1,7 +1,7 @@
 // Reads a byte from a specific memory address
 char read_byte(unsigned int address) {
     char value;
-    asm volatile (
+    __asm__ __volatile__ (
         "ldrb %0, [%1]"
         : "=r" (value)
         : "r" (address)
@@ -11,7 +11,7 @@ char read_byte(unsigned int address) {
 
 // Writes a byte to a specific memory address
 void write_byte(unsigned int address, char value) {
-    asm volatile (
+    __asm__ __volatile__ (
         "strb %1, [%0]"
         :
         : "r" (address), "r" (value)
@@ -21,7 +21,7 @@ void write_byte(unsigned int address, char value) {
 // Reads a halfword (2 bytes) from a specific memory address
 short read_halfword(unsigned int address) {
     short value;
-    asm volatile (
+    __asm__ __volatile__ (
         "ldrh %0, [%1]"
         : "=r" (value)
         : "r" (address)
@@ -30,7 +30,7 @@ short read_halfword(unsigned int address) {
 
 // Writes a halfword (2 bytes) to a specific memory address
 void write_halfword(unsigned int address, short value) {
-    asm volatile (
+    __asm__ __volatile__ (
         "strh %1, [%0]"
         :
         : "r" (address), "r" (value)
@@ -40,7 +40,7 @@ void write_halfword(unsigned int address, short value) {
 // Reads a word (4 bytes) from a specific memory address
 int read_word(unsigned int address) {
     int value;
-    asm volatile (
+    __asm__ __volatile__ (
         "ldr %0, [%1]"
         : "=r" (value)
         : "r" (address)
@@ -49,7 +49,7 @@ int read_word(unsigned int address) {
 
 // Writes a word (4 bytes) to a specific memory address
 void write_word(unsigned int address, int value) {
-    asm volatile (
+    __asm__ __volatile__ (
         "str %1, [%0]"
         :
         : "r" (address), "r" (value)
