@@ -1,19 +1,98 @@
+// Reads a byte from a specific memory address
+char read_byte(unsigned int address) {
+    char value;
+    asm volatile (
+        "ldrb %0, [%1]"
+        : "=r" (value)
+        : "r" (address)
+    );
+    return value;
+}
+
+// Writes a byte to a specific memory address
+void write_byte(unsigned int address, char value) {
+    asm volatile (
+        "strb %1, [%0]"
+        :
+        : "r" (address), "r" (value)
+    );
+}
+
+// Reads a halfword (2 bytes) from a specific memory address
+short read_halfword(unsigned int address) {
+    short value;
+    asm volatile (
+        "ldrh %0, [%1]"
+        : "=r" (value)
+        : "r" (address)
+    );
+}
+
+// Writes a halfword (2 bytes) to a specific memory address
+void write_halfword(unsigned int address, short value) {
+    asm volatile (
+        "strh %1, [%0]"
+        :
+        : "r" (address), "r" (value)
+    );
+}   
+
+// Reads a word (4 bytes) from a specific memory address
+int read_word(unsigned int address) {
+    int value;
+    asm volatile (
+        "ldr %0, [%1]"
+        : "=r" (value)
+        : "r" (address)
+    );
+}
+
+// Writes a word (4 bytes) to a specific memory address
+void write_word(unsigned int address, int value) {
+    asm volatile (
+        "str %1, [%0]"
+        :
+        : "r" (address), "r" (value)
+    );
+}
+
 // From task 0 copy all functions
 void VGA_clear_pixelbuff() {
-	
+	unsigned int address;
+    int x, y = 0;
+    for (int y = 0; y < 240; y++)
+    {
+        for (int x = 0; x < 320; x++)
+        {
+            address = 0xC8000000 | (y << 10) | (x << 1);
+            write_halfword(address, 0);
+            address += 2;
+        }
+    }
 }
 
 void VGA_draw_point(int x, int y, short c) {
-	int address = 0xC8000000 | (y << 10) | (x << 1);
+	unsigned int address = 0xC8000000 | (y << 10) | (x << 1);
     write_halfword(address, c);
 }
 
 void VGA_write_char(int x, int y, char c) {
-	// TODO
+	unsigned int address = 0xC9000000 | (y << 7) | x;
+    write_byte(address, c);
 }
 
 void VGA_clear_charbuff() {
-		// TODO
+	unsigned int address;
+    int x, y = 0;
+    for (int y = 0; y < 60; y++)
+    {
+        for (int x = 0; x < 80; x++)
+        {
+            address = 0xC9000000 | (y << 7) | x;
+            write_byte(address, 0);
+            address += 2;
+        }
+    }
 }
 
 void draw_test_screen ()

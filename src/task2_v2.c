@@ -3,15 +3,31 @@
 
 void write_byte_ASM(unsigned int address, char value)
 {
-	// From task 0
+    asm volatile (
+        "strb %1, [%0]"
+        :
+        : "r" (address), "r" (value)
+    );
 }
 
 char read_byte(unsigned int address)
 {
- 	// From task 0
+    char value;
+    asm volatile (
+        "ldrb %0, [%1]"
+        : "=r" (value)
+        : "r" (address)
+    );
+    return value;
 }
 int read_PS2_data(char *data) {
- 	// TODO
+    unsigned int address = 0xFF200100;
+    char status = read_byte(address);
+    if ((status & 0x01) == 0) {
+        return 0;
+    }
+    *data = read_byte(0xfff9);
+    return 1;
 }
 
 

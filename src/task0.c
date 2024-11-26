@@ -1,5 +1,3 @@
-#include <stdint.h>
-
 // Reads a byte from a specific memory address
 char read_byte(unsigned int address) {
     char value;
