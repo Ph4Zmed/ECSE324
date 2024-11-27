@@ -56,20 +56,6 @@ void write_word(unsigned int address, int value) {
     );
 }
 
-// From task 0 copy all functions
-void VGA_clear_pixelbuff() {
-	unsigned int address;
-    int x, y = 0;
-    for (int y = 0; y < 240; y++)
-    {
-        for (int x = 0; x < 320; x++)
-        {
-            address = 0xC8000000 | (y << 10) | (x << 1);
-            write_halfword(address, 0);
-            address += 2;
-        }
-    }
-}
 
 void VGA_draw_point(int x, int y, short c) {
 	unsigned int address = 0xC8000000 | (y << 10) | (x << 1);
@@ -81,20 +67,25 @@ void VGA_write_char(int x, int y, char c) {
     write_byte(address, c);
 }
 
-void VGA_clear_charbuff() {
-	unsigned int address;
-    int x, y = 0;
-    for (int y = 0; y < 60; y++)
+void VGA_clear_pixelbuff() {
+    for (int y = 0; y < 240; y++)
     {
-        for (int x = 0; x < 80; x++)
+        for (int x = 0; x < 320; x++)
         {
-            address = 0xC9000000 | (y << 7) | x;
-            write_byte(address, 0);
-            address += 2;
+            VGA_draw_point(x, y, 0);
         }
     }
 }
 
+void VGA_clear_charbuff() {
+    for (int y = 0; y < 60; y++)
+    {
+        for (int x = 0; x < 80; x++)
+        {
+            VGA_write_char(x, y, 0);
+        }
+    }
+}
 void draw_test_screen ()
 {
     VGA_clear_pixelbuff();

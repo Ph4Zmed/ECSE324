@@ -1,4 +1,5 @@
-// From task 0 copy all functions
+// Drivers //
+
 // Reads a byte from a specific memory address
 char read_byte(unsigned int address) {
     char value;
@@ -59,17 +60,19 @@ void write_word(unsigned int address, int value) {
     );
 }
 
-// From task 1 copy all functions
+// Draws a pixel at the specified (x, y) coordinate with the specified color
 void VGA_draw_point(int x, int y, short c) {
 	unsigned int address = 0xC8000000 | (y << 10) | (x << 1);
     write_halfword(address, c);
 }
 
+// Writes a character to the specified (x, y) coordinate
 void VGA_write_char(int x, int y, char c) {
 	unsigned int address = 0xC9000000 | (y << 7) | x;
     write_byte(address, c);
 }
 
+// Clears the pixel buffer
 void VGA_clear_pixelbuff() {
     for (int y = 0; y < 240; y++)
     {
@@ -80,6 +83,7 @@ void VGA_clear_pixelbuff() {
     }
 }
 
+// Clears the character buffer
 void VGA_clear_charbuff() {
     for (int y = 0; y < 60; y++)
     {
@@ -90,7 +94,7 @@ void VGA_clear_charbuff() {
     }
 }
 
-// New functions from task 2
+// Reads the data from the PS2 controller
 int read_PS2_data(char *data) {
 	unsigned int address = 0xFF200100;
     int ps2 = read_word(address);
@@ -101,52 +105,9 @@ int read_PS2_data(char *data) {
     return RVALID;
 }
 
-void write_hex_digit(unsigned int x,unsigned int y, char c) {
-    if (c > 9) {
-        c += 55;
-    } else {
-        c += 48;
-    }
-    c &= 255;
-    VGA_write_char(x,y,c);
-}
-void write_byte_kbrd(unsigned int x,unsigned int y, unsigned int c) {
-   char lower=c>>4 &0x0F;
-   write_hex_digit(x,y,lower);
-   char upper=c&0x0F;
-   write_hex_digit(x+1,y,upper);
-   return;
-}
 
-void input_loop_fun() {
-    unsigned int x = 0;
-    unsigned int y = 0;
-	VGA_clear_pixelbuff();
-    VGA_clear_charbuff();
-
-    while (y<=59) {
-    
-        char data;
-        char r2 = read_PS2_data(&data);
-
-        if (r2 != 0) {  // Check if data is available
-
-            write_byte_kbrd(x,y,data); 
-            x += 3;
-            if (x > 79) {
-                y++;
-                x = 0;
-            }
-
-            if (y > 59) {  // Check if loop should exit
-                return;  // End of input loop
-            }
-        }
-    }
-}
 
 
 int main() {
-	input_loop_fun();
-	return 0;
+    
 }

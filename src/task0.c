@@ -26,6 +26,7 @@ short read_halfword(unsigned int address) {
         : "=r" (value)
         : "r" (address)
     );
+    return value;
 }
 
 // Writes a halfword (2 bytes) to a specific memory address
@@ -45,6 +46,7 @@ int read_word(unsigned int address) {
         : "=r" (value)
         : "r" (address)
     );
+    return value;
 }
 
 // Writes a word (4 bytes) to a specific memory address
