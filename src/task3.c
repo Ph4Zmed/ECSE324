@@ -171,6 +171,16 @@ void draw_character(int x){
     }
 }
 
+void erase_character(){
+    for (int y = 192; y < 240; y++) {
+        for (int x = 0; x < 64; x++) {
+            short c = BACKGROUND;
+            int xpos = x + POSITION * 64;
+            VGA_draw_point(xpos, y, c);
+        }
+    }
+}
+
 void start_text(){
     char *text = "Press SPACE to start";
     char *text2 = "Use A to move left - Use D to move right";
@@ -278,7 +288,6 @@ void spawn_object(Object *obj, int col, int speed){
     obj->speed = speed;
     obj->counter = COUNTERS[speed];
     draw_object(obj);
-    STORAGE[STORAGE_INDEX++] = *obj;
     if (STORAGE_INDEX == 6) {
         STORAGE_INDEX = 0;
     }
@@ -289,7 +298,7 @@ void update_objects(){
         if (STORAGE[i].speed != 0){         // If the object is not active, it has speed 0
             Object obj = STORAGE[i];
             if (--obj.counter == 0){
-                obj.y += 12;
+                obj.y += 24;
                 obj.counter = COUNTERS[obj.speed];
                 if (obj.y == SCREEN_HEIGHT){
                     STATE = gameover;
@@ -326,7 +335,6 @@ void check_collision(){
                     }
                     erase_object(&obj);
                 }
-                
             }
         }
     }
@@ -338,10 +346,12 @@ void move_character(){
     if (read_PS2_data(&data)){
         if (data == 0x1C){      // A key
             if (POSITION > 0){
+                erase_character();
                 draw_character(--POSITION);
             }
         } else if (data == 0x23){   // D key
             if (POSITION < 4){
+                erase_character();
                 draw_character(++POSITION);
             }
         }
@@ -349,13 +359,14 @@ void move_character(){
 }
 
 
-int main() {
+int main(){
     while (1) {
     // Initialize everything
     STORAGE_INDEX = 0;
     STATE = start;
     POSITION = 2;
     SCORE = 0;
+    SPAWN_COUNTER = 0;
     VGA_clear_pixelbuff();
     VGA_clear_charbuff();   
     VGA_fill();
@@ -371,24 +382,32 @@ int main() {
         if (read_PS2_data(&data)){
             if (data == 0x29){  // Space key
                 start_timer();
+                VGA_clear_charbuff();   
                 STATE = gaming;
             }
         }
     }
+    // We GAMIN
     while (STATE == gaming) {
         move_character();
         check_collision();
         if (timer_expired()){
             update_objects();
+            if (--SPAWN_COUNTER == 0){
+                int col = random_in_range(0, 4);
+                int speed = random_in_range(0, 2);
+                spawn_object(&STORAGE[STORAGE_INDEX++], col, speed);
+                SPAWN_COUNTER = random_in_range(8, 10);
+            }
         } 
     }
-
+    // ENDSCREEN
     if (SCORE > 99){
         wow();
     } else {
         gameover_text();
     }
-
+    // Wait for ESC key
     while (STATE == gameover){
         char data;
         if (read_PS2_data(&data)){
@@ -398,4 +417,5 @@ int main() {
         }
     }
     return 0;
+    }
 }
