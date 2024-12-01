@@ -1,13 +1,15 @@
 // Global Variables //
 static int SCREEN_HEIGHT=240;
 static int SCREEN_WIDTH=320;
-static int COUNTERS[] = {4,2,1}; // Number of times the timer has to hit to make the object move
+static int COUNTERS[] = {9,3,2,1}; // Number of times the timer has to hit to make the object move
 static short BACKGROUND = 0x94D2;
 typedef enum{start,gaming,gameover} GAMESTATE;
 GAMESTATE STATE;
 int POSITION;
 int SCORE;
 int SPAWN_COUNTER;
+int a_pressed;
+int d_pressed;
 
 // Objects //
 typedef struct {
@@ -17,8 +19,8 @@ typedef struct {
     int counter;
 } Object;
 
-
 int STORAGE_INDEX;
+static int STORAGE_SIZE = 6;
 Object STORAGE[6];
 
 
@@ -254,7 +256,7 @@ void start_timer(){
     // Set the timer
     unsigned int timer_addr = 0xFFFEC600;
     unsigned int timer_ctl = 0xFFFEC608;
-    unsigned int timer_val = 0x0BEBC200;   // 0x0BEBC200 for 1.0 second cycles; 0x03938700 for 0.3 second cycles; 0x05F5E100 for 0.5sec
+    unsigned int timer_val = 0x03938700;   // 0x0BEBC200 for 1.0 second cycles; 0x03938700 for 0.3 second cycles;  for 0.5sec0x05F5E100
     write_word(timer_addr, timer_val);
     write_word(timer_ctl, 0x7);
 }
@@ -288,23 +290,22 @@ void spawn_object(Object *obj, int col, int speed){
     obj->speed = speed;
     obj->counter = COUNTERS[speed];
     draw_object(obj);
-    if (STORAGE_INDEX == 6) {
+    if (STORAGE_INDEX == STORAGE_SIZE) {
         STORAGE_INDEX = 0;
     }
 }
 
 void update_objects(){
-    for (int i = 0; i < 6; i++){
+    for (int i = 0; i < STORAGE_SIZE; i++){
         if (STORAGE[i].speed != 0){         // If the object is not active, it has speed 0
-            Object obj = STORAGE[i];
-            if (--obj.counter == 0){
-                obj.y += 24;
-                obj.counter = COUNTERS[obj.speed];
-                if (obj.y == SCREEN_HEIGHT){
+            if (--STORAGE[i].counter == 0){
+                STORAGE[i].y += 24;
+                STORAGE[i].counter = COUNTERS[STORAGE[i].speed];
+                if (STORAGE[i].y == SCREEN_HEIGHT){
                     STATE = gameover;
                     break;
                 }
-                draw_object(&obj);
+                draw_object(&STORAGE[i]);
             }
         }
     }
@@ -320,10 +321,11 @@ void erase_object(Object *obj){
         }
     }
     obj->speed = 0;
+    obj->counter = 9;
 }
 
 void check_collision(){
-    for (int i = 0; i < 6; i++){
+    for (int i = 0; i < STORAGE_SIZE; i++){
         if (STORAGE[i].speed != 0){         
             Object obj = STORAGE[i];
             if (obj.y >= 192 && obj.y < 240){
@@ -343,37 +345,58 @@ void check_collision(){
 // Moving the Amogus character //
 void move_character(){
     char data;
-    if (read_PS2_data(&data)){
-        if (data == 0x1C){      // A key
+    if (read_PS2_data(&data)) {
+        if (data == 0x1C) {         // A key
             if (POSITION > 0){
                 erase_character();
-                draw_character(--POSITION);
+                POSITION--;
+                draw_character(POSITION);
             }
-        } else if (data == 0x23){   // D key
+        } else if (data == 0x23) {  // D key
             if (POSITION < 4){
                 erase_character();
-                draw_character(++POSITION);
-            }
+                POSITION++;
+                draw_character(POSITION);
+            }        
+        } else if (data == 0xF0) { 
+            read_PS2_data(&data);   // Discard the next data input after the key release
         }
     }
 }
 
+// Testing Function //
+void display_counters() {
+    unsigned char hex_codes[] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F}; // 7-segment codes for 0-9
+    unsigned int hex0_3 = 0;
+    unsigned int hex4_5 = 0;
 
-int main(){
+    for (int i = 0; i < 4; i++) {
+        hex0_3 |= (hex_codes[STORAGE[i].counter] << (i * 8));
+    }
+
+    for (int i = 4; i < 6; i++) {
+        hex4_5 |= (hex_codes[STORAGE[i].counter] << ((i - 4) * 8));
+    }
+
+    write_word(0xFF200020, hex0_3);
+    write_word(0xFF200030, hex4_5);
+}
+
+int main() {
     while (1) {
     // Initialize everything
     STORAGE_INDEX = 0;
     STATE = start;
     POSITION = 2;
     SCORE = 0;
-    SPAWN_COUNTER = 0;
+    SPAWN_COUNTER = 1;
     VGA_clear_pixelbuff();
     VGA_clear_charbuff();   
     VGA_fill();
     start_text();
     draw_character(POSITION);
-    for (int i = 0; i < 6; i++) {
-        STORAGE[i] = (Object){0, 0, 0, 0};
+    for (int i = 0; i < STORAGE_SIZE; i++) {
+        STORAGE[i] = (Object){0, 0, 0, 9};
     }
 
     // Start wait for SPACE key
@@ -393,11 +416,12 @@ int main(){
         check_collision();
         if (timer_expired()){
             update_objects();
+            display_counters(); 
             if (--SPAWN_COUNTER == 0){
                 int col = random_in_range(0, 4);
-                int speed = random_in_range(0, 2);
+                int speed = random_in_range(1, 3);
                 spawn_object(&STORAGE[STORAGE_INDEX++], col, speed);
-                SPAWN_COUNTER = random_in_range(8, 10);
+                SPAWN_COUNTER = random_in_range(6, 12);
             }
         } 
     }
