@@ -139,7 +139,7 @@ int read_PS2_data(char *data) {
 // Pseudo Number Generator //
 // ----------------------- //
 
-unsigned int seed = 727;  // You can set this to any starting value
+unsigned int seed = 72727;  // You can set this to any starting value
 
 // Function to generate a pseudo-random number
 unsigned int pseudo_random() {
@@ -215,12 +215,10 @@ void gameover_text(){
         VGA_write_char(x + i, y, text2[i]);
     }
     x = 45;
-    char *score = "00";
-    score[0] = SCORE / 10 + '0';
-    score[1] = SCORE % 10 + '0';
-    for (int i = 0; i < 2; i++) {
-        VGA_write_char(x + i, y, score[i]);
-    }
+    char score = SCORE / 10 + '0';
+    VGA_write_char(x++, y, score);
+    score = SCORE % 10 + '0';
+    VGA_write_char(x, y, score);
     x = 29;
     y = 33;
     for (int i = 0; i < 20; i++) {
@@ -249,6 +247,19 @@ void wow(){
     for (int i = 0; i < 20; i++) {
         VGA_write_char(x + i, y, text3[i]);
     }
+}
+
+void score_counter(){
+    int x = 0;
+    int y = 0;  
+    char *text = "SCORE: ";
+    for (int i = 0; i < 7; i++) {
+        VGA_write_char(x++, y, text[i]);
+    }
+    char score = SCORE / 10 + '0';
+    VGA_write_char(x++, y, score);
+    score = SCORE % 10 + '0';
+    VGA_write_char(x, y, score);
 }
 
 // Timer Subroutines //
@@ -295,55 +306,59 @@ void spawn_object(Object *obj, int col, int speed){
     }
 }
 
+void erase_object(Object *obj, int collision){  
+    for (int j = 0; j < 48; j++) {
+        for (int i = 0; i < 48; i++) {
+            short c = BACKGROUND;
+            int xpos = obj->x + i + 8;
+            int ypos = obj->y + j;
+            VGA_draw_point(xpos, ypos, c);
+        }
+    }
+    if (collision){
+        obj->x = 0;
+        obj->y = 0;
+        obj->speed = 0;
+        obj->counter = 9;
+    }
+}
+
 void update_objects(){
     for (int i = 0; i < STORAGE_SIZE; i++){
         if (STORAGE[i].speed != 0){         // If the object is not active, it has speed 0
-            if (--STORAGE[i].counter == 0){
-                STORAGE[i].y += 24;
-                STORAGE[i].counter = COUNTERS[STORAGE[i].speed];
-                if (STORAGE[i].y == SCREEN_HEIGHT){
+            if (STORAGE[i].y + 48 >= SCREEN_HEIGHT){
                     STATE = gameover;
                     break;
-                }
+            }
+            if (--STORAGE[i].counter == 0){
+                erase_object(&STORAGE[i], 0);
+                STORAGE[i].y += 24;
+                STORAGE[i].counter = COUNTERS[STORAGE[i].speed];
                 draw_object(&STORAGE[i]);
             }
         }
     }
 }
 
-void erase_object(Object *obj){  
-    for (int j = 0; j < 48; j++) {
-        for (int i = 0; i < 64; i++) {
-            short c = BACKGROUND;
-            int xpos = obj->x + i;
-            int ypos = obj->y + j;
-            VGA_draw_point(xpos, ypos, c);
-        }
-    }
-    obj->speed = 0;
-    obj->counter = 9;
-}
-
 void check_collision(){
     for (int i = 0; i < STORAGE_SIZE; i++){
-        if (STORAGE[i].speed != 0){         
-            Object obj = STORAGE[i];
-            if (obj.y >= 192 && obj.y < 240){
-                if (obj.x == POSITION * 64){
-                    SCORE++;
-                    if (SCORE > 99){
-                        STATE = gameover;
-                        break;
-                    }
-                    erase_object(&obj);
+        if (STORAGE[i].speed != 0 && STORAGE[i].y + 48 >= 192){
+            if (STORAGE[i].x == POSITION * 64){
+                erase_object(&STORAGE[i], 1);
+                draw_character(POSITION);
+                SCORE++;
+                score_counter();
+                if (SCORE > 99){ 
+                    STATE = gameover;
                 }
+                
             }
         }
     }
 }
 
 // Moving the Amogus character //
-void move_character(){
+void move_character(){   
     char data;
     if (read_PS2_data(&data)) {
         if (data == 0x1C) {         // A key
@@ -411,9 +426,8 @@ int main() {
         }
     }
     // We GAMIN
+    score_counter();
     while (STATE == gaming) {
-        move_character();
-        check_collision();
         if (timer_expired()){
             update_objects();
             display_counters(); 
@@ -421,9 +435,11 @@ int main() {
                 int col = random_in_range(0, 4);
                 int speed = random_in_range(1, 3);
                 spawn_object(&STORAGE[STORAGE_INDEX++], col, speed);
-                SPAWN_COUNTER = random_in_range(6, 12);
+                SPAWN_COUNTER = random_in_range(5, 10);
             }
         } 
+        move_character();
+        check_collision();
     }
     // ENDSCREEN
     if (SCORE > 99){
@@ -436,10 +452,10 @@ int main() {
         char data;
         if (read_PS2_data(&data)){
             if (data == 0x76){  // ESC key
-                break;
+                STATE = start;
             }
         }
     }
-    return 0;
     }
+    return 0;
 }
